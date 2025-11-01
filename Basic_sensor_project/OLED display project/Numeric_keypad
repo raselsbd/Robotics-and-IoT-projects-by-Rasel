@@ -1,0 +1,97 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <Keypad.h>
+
+
+const byte ROWS = 4;
+const byte COLS = 4;
+
+
+#define SCREEN_WIDTH 128 // OLED width
+#define SCREEN_HEIGHT 64 // OLED height
+
+// Create display object with I2C address 0x3C
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+
+char keys[ROWS][COLS] = {
+  {'7', '8', '9', '/'},
+  {'4', '5', '6', '*'},
+  {'1', '2', '3', '-'},
+  {'C', '0', '=', '+'}
+};
+
+
+byte rowPins[ROWS] = {13, 12, 11, 10};
+byte colPins[COLS] = {8, 7, 6, 5};
+
+
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+int motor= 3;
+int led1 = 9;
+int led2 =2;
+
+void setup() {
+  
+  Serial.begin(9600);
+  pinMode(motor,OUTPUT);
+  pinMode(led1,OUTPUT);
+  pinMode(led2,OUTPUT);
+
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;); // Don't proceed, loop forever
+  }
+
+  display.clearDisplay(); // Clear buffer
+
+  // Display welcome text
+  display.setTextSize(1);      // Normal 1x scale
+  display.setTextColor(SSD1306_WHITE); // Draw white text
+  display.setCursor(0, 0);     // Start at top-left
+  display.println(F("Hello! OLED Test"));
+}
+
+
+void loop() {
+  char key = keypad.getKey();
+
+  display.clearDisplay();
+  display.drawRect(0, 0, 128, 64, SSD1306_WHITE);
+  display.fillCircle(64, 32, 10, SSD1306_WHITE);
+  display.setTextSize(1);      // Normal 1x scale
+  display.setTextColor(SSD1306_WHITE); // Draw white text
+  display.setCursor(0, 0); 
+  
+
+
+  if (key) {
+    Serial.print("Key Pressed: ");
+    Serial.println(key);
+  }
+  if(key == '3'){
+    digitalWrite(motor, HIGH);
+    delay(200);
+    display.println("Motor ON");
+  } else{
+    digitalWrite(motor, LOW);
+    display.println("Motor OFF");
+  }
+  if(key == '9'){
+    digitalWrite(led1, HIGH);
+      delay(200);
+  }else{
+    digitalWrite(led1, LOW);
+  }
+  if(key == '2'){
+    digitalWrite(led2, HIGH);
+    delay(200);
+  }
+  else
+  {
+    digitalWrite(led2, LOW);
+    }
+  delay(100);
+}

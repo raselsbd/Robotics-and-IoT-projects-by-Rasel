@@ -1,0 +1,35 @@
+
+
+#define PIR_PIN 2
+#define RED_LED 3
+#define GREEN_LED 4
+#define buzzer 5
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(PIR_PIN, INPUT);
+  pinMode(RED_LED, OUTPUT);
+  pinMode(GREEN_LED, OUTPUT);
+  pinMode(buzzer, OUTPUT);
+
+  digitalWrite(RED_LED, LOW);
+  digitalWrite(GREEN_LED, HIGH); // Start with green LED ON
+}
+
+void loop() {
+  int motionDetected = digitalRead(PIR_PIN);
+
+  if (motionDetected == HIGH) {
+    digitalWrite(RED_LED, HIGH);
+    digitalWrite(GREEN_LED, LOW);
+    digitalWrite(buzzer, HIGH);
+    Serial.println("Motion Detect");
+  } else {
+    digitalWrite(RED_LED, LOW);
+    digitalWrite(GREEN_LED, HIGH);
+    digitalWrite(buzzer, LOW);    
+    Serial.println("Motion Not Detect");        
+  }
+
+  delay(100); // Short delay for stability
+}

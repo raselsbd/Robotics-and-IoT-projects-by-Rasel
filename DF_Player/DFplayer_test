@@ -1,0 +1,37 @@
+#include <Arduino.h>
+#include <DFRobotDFPlayerMini.h>
+
+#define RX_PIN 16  // DFPlayer TX -> ESP32 RX2
+#define TX_PIN 17  // DFPlayer RX -> ESP32 TX2
+
+HardwareSerial mySerial(2);   // use UART2
+DFRobotDFPlayerMini myDFPlayer;
+
+void setup() {
+  Serial.begin(115200);
+  mySerial.begin(9600, SERIAL_8N1, RX_PIN, TX_PIN); // hardware UART init
+
+  Serial.println("DFPlayer Mini Hello/Welcome Test");
+
+  if (!myDFPlayer.begin(mySerial)) {
+    Serial.println("Unable to start DFPlayer Mini!");
+    Serial.println("Check wiring and SD card.");
+    while(true); // stop here if failed
+  }
+
+  Serial.println("DFPlayer Mini online.");
+  myDFPlayer.volume(20);  // Volume: 0~30
+
+  // Play first track
+  Serial.println("Playing Track 1: hello.mp3");
+  myDFPlayer.play(1);    
+  delay(3000);  
+
+  // Play second track
+  Serial.println("Playing Track 2: welcome.mp3");
+  myDFPlayer.play(2);    
+}
+
+void loop() {
+  // Nothing in loop
+}

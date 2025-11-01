@@ -1,0 +1,74 @@
+
+
+
+#define BLYNK_TEMPLATE_ID "*************"
+#define BLYNK_TEMPLATE_NAME "Led control"
+#define BLYNK_AUTH_TOKEN "***************************"
+
+#include <WiFi.h>                 // For ESP32
+#include <BlynkSimpleEsp32.h>    // Blynk library for ESP32
+
+char ssid[] = "wifi";       // Replace with your Wi-Fi name
+char pass[] = "*****";   // Replace with your Wi-Fi password
+
+#define LED1_PIN 2  // GPIO 2
+#define LED2_PIN 4  // GPIO 4
+#define Buzzer_PIN 16  // GPIO 16
+
+
+// Control LED1 with Virtual Pin V1
+BLYNK_WRITE(V1)
+{
+  int state = param.asInt();
+  digitalWrite(LED1_PIN, state);
+  Serial.print("LED1 (V0): ");
+  Serial.println(state);
+}
+
+// Control LED2 with Virtual Pin V2
+BLYNK_WRITE(V2)
+{
+  int state = param.asInt();
+  digitalWrite(LED2_PIN, state);
+  Serial.print("LED2 (V1): ");
+  Serial.println(state);
+}
+//Buzzer control V3
+BLYNK_WRITE(V3)
+{
+  int state = param.asInt();
+  digitalWrite(Buzzer_PIN, state);
+  Serial.print("Buzzer (V1): ");
+  Serial.println(state);
+}
+
+void setup()
+{
+  Serial.begin(115200);
+
+  pinMode(LED1_PIN, OUTPUT);
+  pinMode(LED2_PIN, OUTPUT);
+  pinMode(Buzzer_PIN, OUTPUT);
+
+  Serial.print("Connecting to WiFi: ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, pass);
+
+  // Wait for connection
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println();
+  Serial.println("WiFi Connected!");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+}
+
+void loop()
+{
+  Blynk.run();
+}

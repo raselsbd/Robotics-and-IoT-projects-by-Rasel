@@ -1,0 +1,215 @@
+#include <QTRSensors.h>
+
+//QTR Sensor Definition
+QTRSensors qtr;
+const uint8_t sc = 8;
+uint16_t sv[sc], position;
+
+//Tow TB6612FNG Driver Pin Definition
+int pinPWMA = 3; 
+int pinAIN1 = 5; 
+int pinAIN2 = 4; 
+int pinSTBY =6;
+int pinPWMB = 9; 
+int pinBIN1 = 7; 
+int pinBIN2 = 8; 
+
+
+//Constants to help remember the parameters
+static boolean CW = 0;  //for motorDrive function
+static boolean ACW = 1; //for motorDrive function
+static boolean M1 = 0;  //for motorDrive, motorStop, motorBrake functions
+static boolean M2 = 1;  //for motorDrive, motorStop, motorBrake functions
+
+//important variable definition
+int temp=0,high=700,low=500,i;
+
+bool lastSeen=0;
+
+
+void setup()
+{
+
+  Serial.begin(9600); 
+
+//Driver PIN Modes
+  pinMode(pinPWMA, OUTPUT);
+  pinMode(pinAIN1, OUTPUT);
+  pinMode(pinAIN2, OUTPUT);
+  pinMode(pinSTBY, OUTPUT);
+  pinMode(pinPWMB, OUTPUT);
+  pinMode(pinBIN1, OUTPUT);
+  pinMode(pinBIN2, OUTPUT);
+
+ 
+//QTR sensor pins
+  qtr.setTypeAnalog();
+  qtr.setSensorPins((const uint8_t[]){A0,A1,A2,A3,A4,A5,A6,A7},sc);
+
+  calibration();
+
+}
+void loop()
+{
+  readSensorBlack();
+  if(sv[0])lastSeen=0;
+  else if(sv[7])lastSeen=1;
+
+
+  if( onLine())pid();
+  else {
+    shortMove();
+    if(onLine())pid();
+    else{
+      if(lastSeen==0)leftRotate();
+      else if(lastSeen==1) rightRotate();
+    }
+  }
+}
+
+void leftRotate(){
+  while(1){
+
+    readSensorBlack();
+  
+    md(M1,ACW,90);md(M2,CW,90);
+    if(sv[1] || sv[0]){motorBrake();break;}
+  }
+}
+
+void rightRotate(){
+  while(1){
+
+    readSensorBlack();
+
+    md(M1,CW,90);md(M2,ACW,90);
+    if(sv[6] || sv[7]){motorBrake();break;}
+  }
+}
+
+float Kp = 6;
+float Kd = 11;
+int error = 0;
+int lastError = 0;
+int mx = 130;
+
+void pid() {
+  // Serial.println("From PID");
+  readSensorBlack();
+  
+  long position = 0;
+  long sum = 0;
+  for(int i = 0; i < sc; i++){
+    position += (i * 1000 * sv[i]);      
+    sum += sv[i];
+  }
+  position /= sum;
+  
+  
+  error = position - 3500;
+  error = error/300;
+  int motorSpeed = Kp * error + Kd * (error - lastError);
+  lastError = error;
+  int m1Speed = mx - motorSpeed;
+  int m2Speed = mx + motorSpeed;
+  
+  if(m1Speed < 0) m1Speed = 0;
+  if(m2Speed < 0) m2Speed = 0;
+  if(m1Speed > 2 * mx) m1Speed = 2 * mx;
+  if(m2Speed > 2 * mx) m2Speed = 2 * mx;
+  md(M1, CW, m1Speed);
+  md(M2, CW, m2Speed);
+}
+
+void shortMove( ){
+    md(M1, CW, 70);
+    md(M2, CW, 70);
+      delay(300);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+}
+
+int onLine(){
+  readSensorBlack();
+  for(i=0;i<sc;i++){
+    if(sv[i])
+    return 1;
+  }return 0;
+}
+
+void readSensorBlack(){
+  qtr.readLineBlack(sv);
+  for(int i=0 ;i<sc; i++){
+    sv[i]=(sv[i]>high);
+  }
+}
+
+
+void calibration(){
+  delay(200);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
+  for ( i = 0; i < 100; i++)
+  {
+    if(i<50)
+    {
+    md(M1,CW,50);
+    md(M2,CW,50);
+    }else
+    {
+    md(M1,ACW,50);
+    md(M2,ACW,50);
+    }
+    qtr.calibrate();
+  }
+  motorsStandby();
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(700);
+
+}
+
+
+
+
+void md(boolean motorNumber, boolean motorDirection, int motorSpeed)
+{
+  boolean pinIn1;  //Relates to AIN1 or BIN1 (depending on the motor number specified)
+  if (motorDirection == CW)
+    pinIn1 = HIGH;
+  else
+    pinIn1 = LOW;
+
+//Select the motor to turn, and set the direction and the speed
+  if(motorNumber == M1)
+  {
+    digitalWrite(pinAIN1, pinIn1);
+    digitalWrite(pinAIN2, !pinIn1);  //This is the opposite of the AIN1
+    analogWrite(pinPWMA, motorSpeed);
+  }
+  else
+  {
+    digitalWrite(pinBIN1, pinIn1);
+    digitalWrite(pinBIN2, !pinIn1);  //This is the opposite of the BIN1
+    analogWrite(pinPWMB, motorSpeed);
+  }
+   
+//Finally , make sure STBY is disabled - pull it HIGH
+  digitalWrite(pinSTBY, HIGH);
+
+}
+
+void motorBrake()
+{
+/*
+This "Short Brake"s the specified motor, by setting speed to zero
+*/
+    analogWrite(pinPWMA, 0);
+    analogWrite(pinPWMB, 0);
+}
+
+
+void motorsStandby()
+{
+  /*
+  This puts the motors into Standby Mode
+  */
+  digitalWrite(pinSTBY, LOW);
+}

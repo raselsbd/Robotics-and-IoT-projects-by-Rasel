@@ -1,0 +1,74 @@
+// Chage These Credentials with your Blynk Template credentials
+// Chage These Credentials with your Blynk Template credentials 
+#define BLYNK_TEMPLATE_ID "Template ID"
+#define BLYNK_DEVICE_NAME "Device Name"
+#define BLYNK_AUTH_TOKEN "Auth Token"
+
+#define BLYNK_PRINT Serial
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+
+char auth[] = BLYNK_AUTH_TOKEN;
+char ssid[] = "Wifi Name"; // Change your Wifi/ Hotspot Name
+char pass[] = "Wifi Password"; // Change your Wifi/ Hotspot Password
+
+BlynkTimer timer;
+
+#define fire D2
+#define GREEN D5
+#define RED D6
+#define buzzer  D7
+#define relay D8
+int fire_Val = 0;
+
+WidgetLED led(V1);
+
+void setup() //Setup function - only function that is run in deep sleep mode
+{
+  Serial.begin(9600); //Start the serial output at 9600 baud
+  pinMode(GREEN, OUTPUT);
+  pinMode(fire, INPUT);
+  pinMode(RED, OUTPUT);
+  pinMode(buzzer, OUTPUT);
+  pinMode(relay, OUTPUT);
+  
+  Blynk.begin(auth, ssid, pass);//Splash screen delay
+  delay(2000);
+  timer.setInterval(500L, mySensor);
+}
+
+void loop() //Loop function
+{
+  Blynk.run();
+  timer.run();
+}
+
+void mySensor()
+{
+  fire_Val = digitalRead(fire);
+   
+  if (fire_Val == LOW)
+  {
+    Blynk.logEvent("fire_alert");
+    digitalWrite(GREEN, LOW);
+    digitalWrite(RED, HIGH);
+    digitalWrite(buzzer, HIGH);
+    digitalWrite(relay, HIGH);
+    Blynk.virtualWrite(V0, 1);
+    Serial.print("fIRE Level: ");
+    Serial.println(fire_Val);
+    led.on();
+  }
+
+  else
+  {
+    digitalWrite(GREEN, HIGH);
+    digitalWrite(RED, LOW);
+    digitalWrite(buzzer, LOW);
+    digitalWrite(relay, LOW);
+    Blynk.virtualWrite(V0, 0);
+    Serial.print("fIRE Level: ");
+    Serial.println(fire_Val);
+    led.off();
+  }    
+}
